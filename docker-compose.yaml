@@ -1,26 +1,39 @@
-version: '3'
+version: '3.9'
 
 services:
-  api:
-    build: .
-    ports:
-      - "3000:3000"
-    env_file:
-      - .env
-    depends_on:
-      - postgres
-      - redis
-
   postgres:
-    image: postgres:latest
+    image: postgres:16
+    container_name: didomi_pg
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=preference_center_db
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
     ports:
       - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./init/01_seed_consent_types.sql:/docker-entrypoint-initdb.d/01_seed_consent_types.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
-  redis:
-    image: redis:latest
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: didomi_api
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      # override only this for the container
+      DB_HOST: postgres
     ports:
-      - "6379:6379"
+      - "3000:3000"
+
+volumes:
+  pgdata:

@@ -5,12 +5,14 @@ import { CreateUserDto } from './dtos/create-user.dto';
 import { User } from './entities/user.entity';
 import { UserResponseDTO } from './dtos/user-response.dto';
 import { ConsentEvent } from '../events/entities/consent-event.entity';
+import { QueryUsersDto } from './dtos/query-users.dto';
+import { buildMeta } from '../common/dtos/pagination.dto';
 
 @Injectable()
 export class UsersService {
   constructor(
-    @InjectRepository(User)        private readonly usersRepo: Repository<User>,
-    @InjectRepository(ConsentEvent)private readonly eventsRepo: Repository<ConsentEvent>,
+    @InjectRepository(User) private readonly usersRepo: Repository<User>,
+    @InjectRepository(ConsentEvent) private readonly eventsRepo: Repository<ConsentEvent>,
   ) {}
 
   async create(dto: CreateUserDto): Promise<UserResponseDTO> {
@@ -22,9 +24,20 @@ export class UsersService {
     return { id: saved.id, email: saved.email, consents: [] };
   }
 
-  async findAll(): Promise<UserResponseDTO[]> {
-    const users = await this.usersRepo.find({ order: { createdAt: 'ASC' } });
-    return Promise.all(users.map(u => this.getUserWithConsents(u.id)));
+  async findPage(query: QueryUsersDto): Promise<{ data: UserResponseDTO[]; meta: ReturnType<typeof buildMeta> }> {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
+    const skip = (page - 1) * limit;
+
+    const [users, total] = await this.usersRepo.findAndCount({
+      order: { createdAt: 'DESC' },
+      skip,
+      take: limit,
+      select: ['id', 'email', 'createdAt', 'updatedAt'],
+    });
+
+    const data = await Promise.all(users.map(u => this.getUserWithConsents(u.id)));
+    return { data, meta: buildMeta(total, page, limit) };
   }
 
   async findOne(id: string): Promise<UserResponseDTO> {
@@ -39,7 +52,6 @@ export class UsersService {
   }
 
   private async getUserWithConsents(userId: string): Promise<UserResponseDTO> {
-    // Pull all (type.slug, enabled) for this user ordered by slug asc, createdAt desc
     const rows = await this.eventsRepo.createQueryBuilder('e')
       .innerJoin('e.user', 'user')
       .innerJoin('e.type', 'type')

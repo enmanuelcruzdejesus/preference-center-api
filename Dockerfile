@@ -1,17 +1,20 @@
-# --- Build stage ---
-FROM node:20-alpine AS builder
+FROM node:20-alpine AS deps
 WORKDIR /app
-COPY package*.json ./
-RUN npm ci
+COPY package.json package-lock.json* ./
+RUN npm ci --no-audit --no-fund
+
+FROM node:20-alpine AS build
+WORKDIR /app
+COPY --from=deps /app/node_modules /app/node_modules
 COPY . .
 RUN npm run build
 
-# --- Runtime stage ---
-FROM node:20-alpine
+FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
-COPY --from=builder /app/package*.json ./
-RUN npm ci --omit=dev
-COPY --from=builder /app/dist ./dist
-# COPY ./.env ./.env
+COPY --from=build /app/dist /app/dist
+COPY package.json ./
+RUN npm pkg delete scripts.prepare >/dev/null 2>&1 || true && \
+    npm i --omit=dev --no-audit --no-fund
+EXPOSE 3000
 CMD ["node", "dist/main.js"]
