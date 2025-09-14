@@ -4,6 +4,9 @@ import envValidation from './config/env.validation';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UsersModule } from './users/users.module';
 import { EventsModule } from './events/events.module';
+import { User } from './users/entities/user.entity';
+import { ConsentEvent } from './events/entities/consent-event.entity';
+import { ConsentType } from './events/entities/consent-type.entity';
 
 @Module({
   imports: [
@@ -15,7 +18,7 @@ import { EventsModule } from './events/events.module';
         username: process.env.DB_USER,
         password: process.env.DB_PASSWORD,
         database: process.env.DB_NAME,
-        entities: [User, ConsentEvent, ConsentEventItem],
+        entities: [User, ConsentEvent, ConsentType],
         synchronize: true,
       }),
     }),
