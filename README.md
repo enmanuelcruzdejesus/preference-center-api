@@ -1,9 +1,9 @@
-Preference Center API (NestJS)
+# Preference Center API (NestJS)
 
 A production-ready REST API for managing users and their consent preferences (email/SMS).
 Tech stack: NestJS, TypeORM, PostgreSQL, Redis (cache), Swagger/OpenAPI, Jest, Docker Compose.
 
-Quick start (Docker)
+# Quick start (Docker)
 0) Prereqs
 
 Docker Desktop / Docker Engine (Compose v2)
@@ -301,5 +301,6 @@ Add authentication/authorization (e.g., JWT) before exposing publicly.
 Consider idempotency on write endpoints and request size limits.
 
 Add pgbouncer (or an RDS proxy) for connection pooling at scale.
+
 
 Observability: add request logging, metrics, and tracing (e.g., OpenTelemetry) as needed.
