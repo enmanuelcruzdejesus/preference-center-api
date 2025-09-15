@@ -90,35 +90,8 @@ UI: http://localhost:3000/api/docs
 
 JSON: http://localhost:3000/api/docs/json
 
-Repo layout (high level)
-.
-├─ docker-compose.yml
-├─ Dockerfile
-├─ .env
-├─ init/
-│  └─ 01_seed_consent_types.sql
-├─ src/
-│  ├─ app.module.ts
-│  ├─ main.ts
-│  ├─ common/
-│  │  └─ dtos/pagination.dto.ts
-│  │  └─ cache/cache.keys.ts
-│  ├─ consents/seed-consent-types.ts
-│  ├─ users/
-│  │  ├─ users.controller.ts
-│  │  ├─ users.service.ts
-│  │  └─ entities/user.entity.ts
-│  │  └─ dtos/...
-│  ├─ events/
-│  │  ├─ events.controller.ts
-│  │  ├─ events.service.ts
-│  │  └─ entities/consent-event.entity.ts
-│  │  └─ entities/consent-type.entity.ts
-│  │  └─ dtos/...
-│  └─ config/env.validation.ts (optional)
-└─ test specs (e.g., *.spec.ts)
 
-Architecture
+# Architecture
 Core domain
 
 User (users): identified by unique email.
@@ -198,12 +171,6 @@ Shared Redis for cache and invalidation across replicas.
 
 Shared Postgres for persistence (recommend pgbouncer in front at higher scale).
 
-Idempotency can be added later via Idempotency-Key header to deduplicate retries.
-
-Schema & migrations
-
-During development, TYPEORM_SYNCHRONIZE=true auto-creates tables.
-
 For production: use migrations and set TYPEORM_SYNCHRONIZE=false.
 
 Running locally without Docker (optional)
@@ -226,58 +193,6 @@ Unit tests
 npm run test
 # or with coverage:
 npm run test:cov
-
-
-Sample unit specs are included for UsersService and EventsService:
-
-Repos are mocked via getRepositoryToken(...).
-
-Cache is mocked (get, set, del/delete variants handled).
-
-QueryBuilder results are simulated where needed.
-
-Common troubleshooting
-Postgres says: "Database is uninitialized and superuser password is not specified"
-
-Ensure .env exists next to docker-compose.yml and has non-empty DB_PASSWORD.
-
-Run from the folder where both files are located.
-
-Recreate services after changes:
-
-docker compose down -v
-docker compose up -d --build
-
-Seed didn’t run
-
-/docker-entrypoint-initdb.d/*.sql runs only on a fresh volume.
-
-Either:
-
-Run the SQL manually:
-
-docker compose exec -T postgres psql -U ${DB_USER} -d ${DB_NAME} -f /docker-entrypoint-initdb.d/01_seed_consent_types.sql
-
-
-or re-run the SQL statements directly as shown earlier.
-
-Or wipe the volume (docker compose down -v) and start again.
-
-The app also auto-seeds the default consent types on bootstrap to avoid surprises.
-
-Cache deletion typing
-
-Some adapters expose del, some delete, some store.del. Helper handles all forms.
-
-Throttler typing (v5)
-
-Use ThrottlerModule.forRootAsync({ useFactory: () => ({ throttlers: [{ ttl, limit }] }) })
-
-Decorator: @Throttle({ ttl, limit }) (object form), not numeric tuple.
-
-Example requests
-# Health
-curl http://localhost:3000/api/health
 
 # Create a user
 curl -s -X POST http://localhost:3000/api/users \
@@ -304,3 +219,4 @@ Add pgbouncer (or an RDS proxy) for connection pooling at scale.
 
 
 Observability: add request logging, metrics, and tracing (e.g., OpenTelemetry) as needed.
+
