@@ -100,9 +100,8 @@ ConsentType (consent_types): catalog of consent channels (e.g., email_notificati
 
 ConsentEvent (consent_events): append-only log of user changes. Each row links a user + a consent type + enabled + timestamps.
 
-Current consent state for a user is computed by applying the latest event per consent type.
 
-API (required routes)
+# API (required routes)
 
 GET /api/users?page&limit — paginated users + their current consent state.
 
@@ -128,7 +127,7 @@ Validates consent type slugs exist (422).
 Caching (Redis, cache-aside)
 
 
-Rate limiting
+# Rate limiting
 
 @nestjs/throttler v5 (env-driven) globally configured, guard applied only to EventsModule:
 
@@ -191,5 +190,6 @@ Add pgbouncer (or an RDS proxy) for connection pooling at scale.
 
 
 Observability: add request logging, metrics, and tracing (e.g., OpenTelemetry) as needed.
+
 
 
