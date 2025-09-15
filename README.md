@@ -92,7 +92,7 @@ JSON: http://localhost:3000/api/docs/json
 
 
 # Architecture
-Core domain
+# Core domain
 
 User (users): identified by unique email.
 
@@ -127,31 +127,6 @@ Validates consent type slugs exist (422).
 
 Caching (Redis, cache-aside)
 
-Keys
-
-user:state:<userId> — computed current consent state for a user.
-
-consentType:slug:<slug> — small object {id, slug} for consent type resolution.
-
-Reads
-
-Check Redis; on miss, compute (from DB), then SET with TTL.
-
-Writes
-
-After POST /events, invalidate (DEL) user:state:<userId> to keep reads fresh.
-
-TTLs
-
-USER_STATE_TTL_SEC (default 300s)
-
-CONSENT_TYPE_TTL_SEC (default 3600s)
-
-Eviction policy
-
-Redis configured with --maxmemory-policy allkeys-lru and a memory cap.
-
-Reasoning: naturally remove cold keys under pressure while preserving hot ones.
 
 Rate limiting
 
@@ -185,9 +160,6 @@ npm run start:dev
 open http://localhost:3000/api/docs
 
 
-Keep .env as above. Host app uses DB_HOST=localhost and REDIS_HOST=localhost.
-In Compose mode, the API container overrides those hosts to postgres / redis.
-
 Testing
 Unit tests
 npm run test
@@ -219,4 +191,5 @@ Add pgbouncer (or an RDS proxy) for connection pooling at scale.
 
 
 Observability: add request logging, metrics, and tracing (e.g., OpenTelemetry) as needed.
+
 
