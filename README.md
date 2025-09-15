@@ -1,98 +1,305 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+Preference Center API (NestJS)
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+A production-ready REST API for managing users and their consent preferences (email/SMS).
+Tech stack: NestJS, TypeORM, PostgreSQL, Redis (cache), Swagger/OpenAPI, Jest, Docker Compose.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+Quick start (Docker)
+0) Prereqs
 
-## Description
+Docker Desktop / Docker Engine (Compose v2)
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+Port 3000 (API), 5432 (Postgres), 6379 (Redis) available
 
-## Project setup
+1) Clone & create .env
 
-```bash
-$ npm install
-```
+Create a single .env at the repo root:
 
-## Compile and run the project
+# App
+PORT=3000
+GLOBAL_PREFIX=api
 
-```bash
-# development
-$ npm run start
+# DB (host-run uses localhost; the api container will override DB_HOST to 'postgres')
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=postgres
+DB_PASSWORD=postgres
+DB_NAME=preference_center_db
 
-# watch mode
-$ npm run start:dev
+TYPEORM_LOGGING=true
+TYPEORM_SYNCHRONIZE=true
+DB_POOL_MAX=10
 
-# production mode
-$ npm run start:prod
-```
+# Redis (host-run uses localhost; the api container will override REDIS_HOST to 'redis')
+REDIS_HOST=localhost
+REDIS_PORT=6379
 
-## Run tests
+# Cache TTLs (seconds)
+CONSENT_TYPE_TTL_SEC=3600
+USER_STATE_TTL_SEC=300
 
-```bash
-# unit tests
-$ npm run test
+# Rate limit for /events (per client IP)
+RL_EVENTS_LIMIT=30
+RL_EVENTS_TTL_SEC=60
 
-# e2e tests
-$ npm run test:e2e
 
-# test coverage
-$ npm run test:cov
-```
+TYPEORM_SYNCHRONIZE=true is for dev. For production, use migrations and set it to false.
 
-## Deployment
+2) Seed script (first-time DB initialization)
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+Ensure you have this file (already included in the repo structure):
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+init/01_seed_consent_types.sql
 
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+Content (idempotent):
 
-## Resources
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
-Check out a few resources that may come in handy when working with NestJS:
+CREATE TABLE IF NOT EXISTS consent_types (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  slug VARCHAR(120) UNIQUE NOT NULL,
+  name VARCHAR(160),
+  "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+INSERT INTO consent_types (slug, name) VALUES ('email_notifications','Email notifications') ON CONFLICT (slug) DO NOTHING;
+INSERT INTO consent_types (slug, name) VALUES ('sms_notifications','SMS notifications') ON CONFLICT (slug) DO NOTHING;
 
-## Support
+3) Start the stack
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+From the repo root (where docker-compose.yml and .env live):
 
-## Stay in touch
+docker compose up -d --build
+docker compose logs -f api
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
 
-## License
+Compose services:
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+postgres (PostgreSQL 16)
+
+redis (Redis 7, allkeys-lru, maxmemory 256MB)
+
+api (NestJS)
+
+The API becomes available at:
+http://localhost:3000/api
+
+4) API docs (Swagger)
+
+UI: http://localhost:3000/api/docs
+
+JSON: http://localhost:3000/api/docs/json
+
+Repo layout (high level)
+.
+├─ docker-compose.yml
+├─ Dockerfile
+├─ .env
+├─ init/
+│  └─ 01_seed_consent_types.sql
+├─ src/
+│  ├─ app.module.ts
+│  ├─ main.ts
+│  ├─ common/
+│  │  └─ dtos/pagination.dto.ts
+│  │  └─ cache/cache.keys.ts
+│  ├─ consents/seed-consent-types.ts
+│  ├─ users/
+│  │  ├─ users.controller.ts
+│  │  ├─ users.service.ts
+│  │  └─ entities/user.entity.ts
+│  │  └─ dtos/...
+│  ├─ events/
+│  │  ├─ events.controller.ts
+│  │  ├─ events.service.ts
+│  │  └─ entities/consent-event.entity.ts
+│  │  └─ entities/consent-type.entity.ts
+│  │  └─ dtos/...
+│  └─ config/env.validation.ts (optional)
+└─ test specs (e.g., *.spec.ts)
+
+Architecture
+Core domain
+
+User (users): identified by unique email.
+
+ConsentType (consent_types): catalog of consent channels (e.g., email_notifications, sms_notifications).
+
+ConsentEvent (consent_events): append-only log of user changes. Each row links a user + a consent type + enabled + timestamps.
+
+Current consent state for a user is computed by applying the latest event per consent type.
+
+API (required routes)
+
+GET /api/users?page&limit — paginated users + their current consent state.
+
+POST /api/users — create a user { email }. Enforces unique valid email.
+
+DELETE /api/users/:id — delete a user.
+
+POST /api/events — create one or more consent change events:
+
+{
+  "user": {"id": "UUID"},
+  "consents": [
+    {"id": "email_notifications", "enabled": true},
+    {"id": "sms_notifications", "enabled": false}
+  ]
+}
+
+
+Validates user exists (404).
+
+Validates consent type slugs exist (422).
+
+Caching (Redis, cache-aside)
+
+Keys
+
+user:state:<userId> — computed current consent state for a user.
+
+consentType:slug:<slug> — small object {id, slug} for consent type resolution.
+
+Reads
+
+Check Redis; on miss, compute (from DB), then SET with TTL.
+
+Writes
+
+After POST /events, invalidate (DEL) user:state:<userId> to keep reads fresh.
+
+TTLs
+
+USER_STATE_TTL_SEC (default 300s)
+
+CONSENT_TYPE_TTL_SEC (default 3600s)
+
+Eviction policy
+
+Redis configured with --maxmemory-policy allkeys-lru and a memory cap.
+
+Reasoning: naturally remove cold keys under pressure while preserving hot ones.
+
+Rate limiting
+
+@nestjs/throttler v5 (env-driven) globally configured, guard applied only to EventsModule:
+
+Defaults: RL_EVENTS_LIMIT=30 per RL_EVENTS_TTL_SEC=60.
+
+POST /events may have a stricter @Throttle({ ttl: 60, limit: 10 }) override.
+
+Intended to protect DB/cache from abusive write spikes.
+
+Horizontal scalability
+
+Stateless API containers (no local state).
+
+Shared Redis for cache and invalidation across replicas.
+
+Shared Postgres for persistence (recommend pgbouncer in front at higher scale).
+
+Idempotency can be added later via Idempotency-Key header to deduplicate retries.
+
+Schema & migrations
+
+During development, TYPEORM_SYNCHRONIZE=true auto-creates tables.
+
+For production: use migrations and set TYPEORM_SYNCHRONIZE=false.
+
+Running locally without Docker (optional)
+# 1) Start only Postgres & Redis
+docker compose up -d postgres redis
+
+# 2) Install & run the API on your host
+npm install
+npm run start:dev
+
+# API
+open http://localhost:3000/api/docs
+
+
+Keep .env as above. Host app uses DB_HOST=localhost and REDIS_HOST=localhost.
+In Compose mode, the API container overrides those hosts to postgres / redis.
+
+Testing
+Unit tests
+npm run test
+# or with coverage:
+npm run test:cov
+
+
+Sample unit specs are included for UsersService and EventsService:
+
+Repos are mocked via getRepositoryToken(...).
+
+Cache is mocked (get, set, del/delete variants handled).
+
+QueryBuilder results are simulated where needed.
+
+Common troubleshooting
+Postgres says: "Database is uninitialized and superuser password is not specified"
+
+Ensure .env exists next to docker-compose.yml and has non-empty DB_PASSWORD.
+
+Run from the folder where both files are located.
+
+Recreate services after changes:
+
+docker compose down -v
+docker compose up -d --build
+
+Seed didn’t run
+
+/docker-entrypoint-initdb.d/*.sql runs only on a fresh volume.
+
+Either:
+
+Run the SQL manually:
+
+docker compose exec -T postgres psql -U ${DB_USER} -d ${DB_NAME} -f /docker-entrypoint-initdb.d/01_seed_consent_types.sql
+
+
+or re-run the SQL statements directly as shown earlier.
+
+Or wipe the volume (docker compose down -v) and start again.
+
+The app also auto-seeds the default consent types on bootstrap to avoid surprises.
+
+Cache deletion typing
+
+Some adapters expose del, some delete, some store.del. Helper handles all forms.
+
+Throttler typing (v5)
+
+Use ThrottlerModule.forRootAsync({ useFactory: () => ({ throttlers: [{ ttl, limit }] }) })
+
+Decorator: @Throttle({ ttl, limit }) (object form), not numeric tuple.
+
+Example requests
+# Health
+curl http://localhost:3000/api/health
+
+# Create a user
+curl -s -X POST http://localhost:3000/api/users \
+  -H 'content-type: application/json' \
+  -d '{"email":"john.doe@example.com"}'
+
+# Create consent change events
+USER_ID="<paste-id>"
+curl -s -X POST http://localhost:3000/api/events \
+  -H 'content-type: application/json' \
+  -d "{\"user\":{\"id\":\"$USER_ID\"},\"consents\":[{\"id\":\"email_notifications\",\"enabled\":true}]}"
+
+curl -s -X POST http://localhost:3000/api/events \
+  -H 'content-type: application/json' \
+  -d "{\"user\":{\"id\":\"$USER_ID\"},\"consents\":[{\"id\":\"email_notifications\",\"enabled\":false},{\"id\":\"sms_notifications\",\"enabled\":true}]}"
+
+Security & prod notes
+
+Add authentication/authorization (e.g., JWT) before exposing publicly.
+
+Consider idempotency on write endpoints and request size limits.
+
+Add pgbouncer (or an RDS proxy) for connection pooling at scale.
+
+Observability: add request logging, metrics, and tracing (e.g., OpenTelemetry) as needed.
