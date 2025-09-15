@@ -1,7 +1,14 @@
-
 import { ConsentEvent } from 'src/events/entities/consent-event.entity';
-import { Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn, Unique, UpdateDateColumn, Index } from 'typeorm';
-
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  OneToMany,
+  PrimaryGeneratedColumn,
+  Unique,
+  UpdateDateColumn,
+  Index,
+} from 'typeorm';
 
 @Entity('users')
 @Unique(['email'])
@@ -13,7 +20,7 @@ export class User {
   @Column({ type: 'varchar', length: 320 })
   email!: string;
 
-  @OneToMany(() => ConsentEvent, e => e.user, { cascade: false })
+  @OneToMany(() => ConsentEvent, (e) => e.user, { cascade: false })
   events!: ConsentEvent[];
 
   @CreateDateColumn()

@@ -1,8 +1,7 @@
 import 'dotenv/config';
 import * as Joi from 'joi';
 
-console.log(process.env)
-
+console.log(process.env);
 
 export default () => {
   const schema = Joi.object({
@@ -16,8 +15,7 @@ export default () => {
     DB_USER: Joi.string().required(),
     DB_PASSWORD: Joi.string().required(),
     DB_NAME: Joi.string().required(),
-    REDIS_PORT: Joi.number().default(6379),   
-  
+    REDIS_PORT: Joi.number().default(6379),
   }).unknown(true);
 
   const { error, value } = schema.validate(process.env, { abortEarly: false });

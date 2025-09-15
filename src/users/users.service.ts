@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateUserDto } from './dtos/create-user.dto';
@@ -12,19 +16,28 @@ import { buildMeta } from '../common/dtos/pagination.dto';
 export class UsersService {
   constructor(
     @InjectRepository(User) private readonly usersRepo: Repository<User>,
-    @InjectRepository(ConsentEvent) private readonly eventsRepo: Repository<ConsentEvent>,
+    @InjectRepository(ConsentEvent)
+    private readonly eventsRepo: Repository<ConsentEvent>,
   ) {}
 
   async create(dto: CreateUserDto): Promise<UserResponseDTO> {
-    const exists = await this.usersRepo.findOne({ where: { email: dto.email } });
+    const exists = await this.usersRepo.findOne({
+      where: { email: dto.email },
+    });
     if (exists) {
-      throw new UnprocessableEntityException([{ property: 'email', constraints: { unique: 'email must be unique' } }]);
+      throw new UnprocessableEntityException([
+        { property: 'email', constraints: { unique: 'email must be unique' } },
+      ]);
     }
-    const saved = await this.usersRepo.save(this.usersRepo.create({ email: dto.email }));
+    const saved = await this.usersRepo.save(
+      this.usersRepo.create({ email: dto.email }),
+    );
     return { id: saved.id, email: saved.email, consents: [] };
   }
 
-  async findPage(query: QueryUsersDto): Promise<{ data: UserResponseDTO[]; meta: ReturnType<typeof buildMeta> }> {
+  async findPage(
+    query: QueryUsersDto,
+  ): Promise<{ data: UserResponseDTO[]; meta: ReturnType<typeof buildMeta> }> {
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
     const skip = (page - 1) * limit;
@@ -36,7 +49,9 @@ export class UsersService {
       select: ['id', 'email', 'createdAt', 'updatedAt'],
     });
 
-    const data = await Promise.all(users.map(u => this.getUserWithConsents(u.id)));
+    const data = await Promise.all(
+      users.map((u) => this.getUserWithConsents(u.id)),
+    );
     return { data, meta: buildMeta(total, page, limit) };
   }
 
@@ -52,10 +67,15 @@ export class UsersService {
   }
 
   private async getUserWithConsents(userId: string): Promise<UserResponseDTO> {
-    const rows = await this.eventsRepo.createQueryBuilder('e')
+    const rows = await this.eventsRepo
+      .createQueryBuilder('e')
       .innerJoin('e.user', 'user')
       .innerJoin('e.type', 'type')
-      .select(['type.slug AS slug', 'e.enabled AS enabled', 'e.createdAt AS createdAt'])
+      .select([
+        'type.slug AS slug',
+        'e.enabled AS enabled',
+        'e.createdAt AS createdAt',
+      ])
       .where('user.id = :userId', { userId })
       .orderBy('type.slug', 'ASC')
       .addOrderBy('e.createdAt', 'DESC')

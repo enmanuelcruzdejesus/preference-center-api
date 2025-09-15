@@ -1,5 +1,5 @@
 export interface UserConsentDTO {
-  id: string;        // consent type slug (e.g., "email_notifications")
+  id: string; // consent type slug (e.g., "email_notifications")
   enabled: boolean;
 }
 

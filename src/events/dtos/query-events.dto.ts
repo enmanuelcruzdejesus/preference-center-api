@@ -8,7 +8,9 @@ export class QueryEventsDto extends PaginationDto {
   @IsUUID('4')
   userId?: string;
 
-  @ApiPropertyOptional({ description: 'Filter by consent type slug (e.g. email_notifications)' })
+  @ApiPropertyOptional({
+    description: 'Filter by consent type slug (e.g. email_notifications)',
+  })
   @IsOptional()
   @IsString()
   type?: string;
