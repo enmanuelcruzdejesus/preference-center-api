@@ -158,12 +158,10 @@ npm run start:dev
 # API
 open http://localhost:3000/api/docs
 
-
-Testing
+# Testing
 Unit tests
 npm run test
-# or with coverage:
-npm run test:cov
+
 
 # Create a user
 curl -s -X POST http://localhost:3000/api/users \
@@ -190,6 +188,7 @@ Add pgbouncer (or an RDS proxy) for connection pooling at scale.
 
 
 Observability: add request logging, metrics, and tracing (e.g., OpenTelemetry) as needed.
+
 
 
 
