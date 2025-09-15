@@ -178,7 +178,7 @@ curl -s -X POST http://localhost:3000/api/events \
   -H 'content-type: application/json' \
   -d "{\"user\":{\"id\":\"$USER_ID\"},\"consents\":[{\"id\":\"email_notifications\",\"enabled\":false},{\"id\":\"sms_notifications\",\"enabled\":true}]}"
 
-Security & prod notes
+# Security & prod notes
 
 Add authentication/authorization (e.g., JWT) before exposing publicly.
 
@@ -186,8 +186,8 @@ Consider idempotency on write endpoints and request size limits.
 
 Add pgbouncer (or an RDS proxy) for connection pooling at scale.
 
-
 Observability: add request logging, metrics, and tracing (e.g., OpenTelemetry) as needed.
+
 
 
 
