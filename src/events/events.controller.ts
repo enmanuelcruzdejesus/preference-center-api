@@ -4,6 +4,7 @@ import { CreateEventDto } from './dtos/create-event.dto';
 import { QueryEventsDto } from './dtos/query-events.dto';
 import { PageMeta } from '../common/dtos/pagination.dto';
 import { Throttle } from '@nestjs/throttler';
+import { ApiOperation } from '@nestjs/swagger';
 
 type EventRow = {
   id: string;
@@ -18,11 +19,13 @@ type EventsPage = { data: EventRow[]; meta: PageMeta };
 export class EventsController {
   constructor(private readonly eventsService: EventsService) {}
 
+  @ApiOperation({ summary: 'List consent events (paginated)' })
   @Get()
   async list(@Query() query: QueryEventsDto): Promise<EventsPage> {
     return this.eventsService.list(query);
   }
 
+  @ApiOperation({ summary: 'Create consent change event(s) for a user' })
   @Post()
   @Throttle({
     limit: parseInt(process.env.RL_EVENTS_LIMIT || '10', 10),
